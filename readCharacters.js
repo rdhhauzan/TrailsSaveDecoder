@@ -18,6 +18,18 @@ const characterIdMap = {
     65535: "None"
 };
 
+const characterStatsJSON = [
+    {"name": "str", "offset": 16},
+    {"name": "def", "offset": 18},
+    {"name": "ats", "offset": 20},
+    {"name": "adf", "offset": 22},
+    {"name": "spd", "offset": 24},
+    {"name": "dex", "offset": 26},
+    {"name": "agl", "offset": 28},
+    {"name": "mov", "offset": 30},
+    {"name": "rng", "offset": 32}
+];
+
 function readDatFile(filePath) {
     const buffer = fs.readFileSync(filePath);
 
@@ -30,6 +42,7 @@ function readDatFile(filePath) {
     for (let i = 0; i < numberOfCharacters; i++) {
         const characterOffset = charactersOffset + i * characterStride;
         const characterId = buffer.readUInt16LE(characterOffset);
+        const characterName = characterIdMap[i];
 
         // Get the character level (36 bytes into the character block)
         const levelOffset = characterOffset + 36;
@@ -39,17 +52,32 @@ function readDatFile(filePath) {
         const maxHPOffset = characterOffset + 4;
         const characterMaxHP = buffer.readUInt16LE(maxHPOffset);
 
-        // 
+        // Get the character Max EP (4 bytes into the character block)
+        const maxEPOffset = characterOffset + 10;
+        const characterMaxEP = buffer.readUInt16LE(maxEPOffset);
 
-        // Map character name
-        const characterName = characterIdMap[i];
+        // Get the character Max CP (14 bytes into the character block)
+        const maxCPOffset = characterOffset + 14;
+        const characterMaxCP = buffer.readUInt16LE(maxCPOffset);
 
-        characters.push({
+        // Create a character object
+        const character = {
             id: characterId,
             name: characterName,
             level: characterLevel,
-            maxHP: characterMaxHP
+            maxHP: characterMaxHP,
+            maxEP: characterMaxEP,
+            maxCP: characterMaxCP
+        };
+
+        // Get character stats based on characterStatsJSON
+        characterStatsJSON.forEach(stat => {
+            const statsOffset = characterOffset + stat.offset;
+            const characterStats = buffer.readUInt16LE(statsOffset);
+            character[stat.name] = characterStats; // Add stats to character object
         });
+
+        characters.push(character); // Add character object to the array
     }
 
     return characters;
@@ -60,4 +88,3 @@ const filePath = './save007.dat'; // Replace with your actual file path
 const characters = readDatFile(filePath);
 
 console.log(characters);
-
